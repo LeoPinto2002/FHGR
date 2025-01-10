@@ -1,0 +1,54 @@
+#mit raspberry pi verbinden
+ssh leandropinto@pi-nas.local
+
+#herausfinden wie angeschlossene Festplatte heisst
+lsblk
+
+#festplatte vorbereiten damit es vom raspberry pi richtig erkannt wird (sda ist der name der Festplatte)
+sudo fdisk /dev/sda
+#im selben befehl "n" eingeben für eine neue partition. "p" eingeben für "primary" und dann "2" so heisst es neu "sda2" und danach "w" für speichern und verlassen des Befehls
+
+#neue formation der Festplatte in ext4 Format
+sudo mkfs.ext4 /dev/sda2
+
+#laufwerk in das Dateisystem des Raspberry pi einbinden
+sudo mount /dev/sda2
+
+#sicherstellen das es der vorherige schritt nach jedem neustarten des Raspberry pi geschieht
+sudo nano /etc/fstab
+#am ende folgendes ergänzen:
+/dev/sda1 /mnt/sda1/ ext4 defaults,noatime 0 1
+
+#teilbarer Ordner erstellen
+sudo mkdir /mnt/sda2/shared
+
+#allen nutzern lese/schreib Rechte geben
+sudo chmod -R 777 /mnt/sda2/shared
+
+#Samba installieren
+sudo apt install samba samba-common-bin
+
+#falls es beim ersten mal nicht funktionieren soll dann zuerst updaten
+sudo apt-get update
+#danach wieder versuchen Samba zu installieren
+
+#Samba configuration file öffnen
+sudo nano /etc/samba/smb.conf
+
+#samba sagen er soll den ordner shared im netwerk teilen in dem man folgendes ans ende hinzufügt
+[shared]
+path=/mnt/sda1/shared
+writeable=Yes
+create mask=0777
+directory mask=0777
+public=no
+#danach ctrl+x und y und enter drücken zums speichern
+
+#Samba neustarten um die configuration zu übernehmen
+sudo systemctl restart smbd
+
+#Benutzer hinzufügen
+sudo adduser leandropinto
+
+#setze ein passwort für diesen Benutzer
+sudo passwd leandropinto
